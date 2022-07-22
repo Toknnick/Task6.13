@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Task6._13
@@ -15,29 +15,36 @@ namespace Task6._13
     class CarService
     {
         private List<Box> _boxes = new List<Box>();
+        private List<string> _cachBills = new List<string>();
         private int _money = 100;
+
+        public CarService()
+        {
+            AddStorage();
+        }
 
         public void Work()
         {
-            Storage storage = new Storage();
-            _boxes = storage.Bring();
             bool isWork = true;
 
             while (isWork)
             {
-                Console.WriteLine("1.Посмотреть склад. \n2.Обслужить клиента. \n3.Закончить рабочий день. \nВыберите вариант:");
+                Console.WriteLine("1.Посмотреть склад. \n2.Обслужить клиента. \n3.Показать все чеки за сегодня. \n4.Закончить рабочий день. \nВыберите вариант:");
                 string userInput = Console.ReadLine();
                 Console.Clear();
 
                 switch (userInput)
                 {
                     case "1":
-                        storage.ShowBoxes();
+                        ShowStorage();
                         break;
                     case "2":
-                        ServeClient(storage);
+                        ServeClient();
                         break;
                     case "3":
+                        ShowAllCachBills();
+                        break;
+                    case "4":
                         isWork = false;
                         break;
                 }
@@ -48,7 +55,22 @@ namespace Task6._13
             Console.WriteLine($"За сегодня вы заработали {_money}");
         }
 
-        private void ServeClient(Storage storage)
+        private void ShowAllCachBills()
+        {
+            if (_cachBills.Count > 0)
+            {
+                foreach (var cachBill in _cachBills)
+                {
+                    Console.WriteLine(cachBill);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Чеков за сегодня нет!");
+            }
+        }
+
+        private void ServeClient()
         {
             Random random = new Random();
             int numberOfBrokenComponent = random.Next(Enum.GetNames(typeof(NamesOfComponents)).Length);
@@ -72,7 +94,7 @@ namespace Task6._13
                         priceForRepair = KnowPriceForBrokenComponent(nameOfBrokenComponent, numberOfBrokenComponent, priceForWork);
                         break;
                     case "2":
-                        isWork = MakeRepair(storage, nameOfBrokenComponent, priceForRepair, ref isPayFine, fine);
+                        isWork = MakeRepair(nameOfBrokenComponent, priceForRepair, ref isPayFine, fine);
                         break;
                 }
 
@@ -90,7 +112,7 @@ namespace Task6._13
             return priceForRepair;
         }
 
-        private bool MakeRepair(Storage storage, NamesOfComponents nameOfBrokenComponent, int priceForRepair, ref bool isPayFine, int fine)
+        private bool MakeRepair(NamesOfComponents nameOfBrokenComponent, int priceForRepair, ref bool isPayFine, int fine)
         {
             bool isWork = true;
 
@@ -98,7 +120,7 @@ namespace Task6._13
             {
                 while (isWork)
                 {
-                    if (int.TryParse(ChooseBox(storage, priceForRepair), out int numberOfBox) )
+                    if (int.TryParse(ChooseBox(priceForRepair), out int numberOfBox))
                     {
                         numberOfBox -= 1;
 
@@ -129,21 +151,23 @@ namespace Task6._13
 
         private void WriteCashBill(bool isPayFine, int priceForRepair, NamesOfComponents nameOfBrokenComponent, int numberOfBox, int fine)
         {
-            Console.WriteLine("Автомастерская «У Билла»");
-            Console.WriteLine($"Дата: {DateTime.Now:dd MMMM yyyy}.");
-            Console.WriteLine($"Время: {DateTime.Now:HH:mm:ss}.");
+            string text = "Автомастерская «У Билла» \n"
+                       + $"Дата: {DateTime.Now:dd MMMM yyyy}. \n"
+                       + $"Время: {DateTime.Now:HH:mm:ss}. \n";
 
             if (isPayFine == false)
             {
-                Console.WriteLine($"За ремонт вы заработали {priceForRepair} монет.");
-                Console.WriteLine($"В ящике с {nameOfBrokenComponent} осталось {_boxes[numberOfBox].CountOfComponents} деталей.");
+                text += $"За ремонт вы заработали {priceForRepair} монет.\n"
+                      + $"В ящике с {nameOfBrokenComponent} осталось {_boxes[numberOfBox].CountOfComponents} деталей. \n";
             }
             else
             {
-                Console.WriteLine($"Вы заплатили компенсацию клиенту за предоставленные неудобства в размере {fine} монет.");
+                text += $"Вы заплатили компенсацию клиенту за предоставленные неудобства в размере {fine} монет. \n";
             }
 
-            Console.WriteLine("Удачного дня!");
+            text += "Удачного дня! \n";
+            Console.WriteLine(text);
+            _cachBills.Add(text);
         }
 
         private bool ReplaceComponent(NamesOfComponents nameOfBrokenComponent, int numberOfBox, ref bool isPayFine, int fine)
@@ -174,9 +198,9 @@ namespace Task6._13
             return isWork;
         }
 
-        private string ChooseBox(Storage storage, int priceForRepair)
+        private string ChooseBox(int priceForRepair)
         {
-            storage.ShowBoxes();
+            ShowStorage();
             Console.WriteLine($" \nУсловия: за замену неправильной детали - штраф. За невыполненую работу тоже - штраф. За починку вы получите: {priceForRepair}");
             Console.WriteLine("Введите номер ящика с нужными деталями, чтобы заменить деталь:");
             string userInput = Console.ReadLine();
@@ -192,38 +216,12 @@ namespace Task6._13
 
         private void WriteMessage()
         {
-            Console.WriteLine(" \nДля продолжения нажмите любую клавишу:");
+            Console.WriteLine("Для продолжения нажмите любую клавишу:");
             Console.ReadKey();
             Console.Clear();
         }
-    }
 
-    class Storage
-    {
-        private List<Box> _boxes = new List<Box>();
-
-        public Storage()
-        {
-            AddBoxes();
-        }
-
-        public void ShowBoxes()
-        {
-            Console.WriteLine("Ваш склад:");
-
-            for (int i = 0; i < _boxes.Count; i++)
-            {
-                Console.Write(i + 1 + ".");
-                _boxes[i].ShowComponents();
-            }
-        }
-
-        public List<Box> Bring()
-        {
-            return _boxes;
-        }
-
-        private void AddBoxes()
+        private void AddStorage()
         {
             Random random = new Random();
             int minCountOfComponents = 1;
@@ -236,6 +234,17 @@ namespace Task6._13
                 int countOfComponents = random.Next(minCountOfComponents, maxCountOfComponents);
                 int price = random.Next(minPrice, maxPrice);
                 _boxes.Add(new Box(countOfComponents, new Component((NamesOfComponents)i, price)));
+            }
+        }
+
+        public void ShowStorage()
+        {
+            Console.WriteLine("Ваш склад:");
+
+            for (int i = 0; i < _boxes.Count; i++)
+            {
+                Console.Write(i + 1 + ".");
+                _boxes[i].ShowComponents();
             }
         }
     }
@@ -276,23 +285,6 @@ namespace Task6._13
         }
     }
 
-    enum NamesOfComponents
-    {
-        Помпа,
-        Глушитель,
-        Бензонасос,
-        ТормозныеДиски,
-        РадиаторПечки,
-        ПодсветкаНомера,
-        ПоршневыеКольца,
-        ДатчикТемпературы,
-        Термостат,
-        СвечиЗажигания,
-        КатушкаЗажигания,
-        КрышкаТопливногоБака,
-        Шина,
-    }
-
     class Component
     {
         public int Price { get; private set; }
@@ -308,5 +300,22 @@ namespace Task6._13
         {
             Console.WriteLine($"{Name}. Стоймость детали: {Price} монет.");
         }
+    }
+
+    enum NamesOfComponents
+    {
+        Помпа,
+        Глушитель,
+        Бензонасос,
+        ТормозныеДиски,
+        РадиаторПечки,
+        ПодсветкаНомера,
+        ПоршневыеКольца,
+        ДатчикТемпературы,
+        Термостат,
+        СвечиЗажигания,
+        КатушкаЗажигания,
+        КрышкаТопливногоБака,
+        Шина,
     }
 }
